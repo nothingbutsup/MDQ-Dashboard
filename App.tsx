@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ExpenseSplitter } from './components/ExpenseSplitter';
 import { ChoreDraft } from './components/ChoreDraft';
 import { ApartmentMap } from './components/ApartmentMap';
@@ -14,16 +14,26 @@ import {
     Trophy, 
     Menu, 
     X,
-    LayoutGrid,
-    ChevronLeft,
-    CircleDot
+    LayoutGrid
 } from 'lucide-react';
 
 type TabType = 'DASHBOARD' | 'EXPENSE' | 'DRAFT' | 'MAP' | 'RULES' | 'TRUCO';
 
 function App() {
+  // Initialize sidebar closed on mobile, open on desktop
   const [activeTab, setActiveTab] = useState<TabType>('DASHBOARD');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
+
+  // Re-check on window resize to ensure better responsive behavior
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsSidebarOpen(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const getContainerWidth = () => {
       switch (activeTab) {
@@ -127,7 +137,7 @@ function App() {
         </header>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 sm:p-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-4 pt-6 pb-24 sm:p-8 custom-scrollbar">
             <div className={`w-full mx-auto ${getContainerWidth()}`}>
                 {activeTab === 'DASHBOARD' && <Dashboard onNavigate={(tab) => setActiveTab(tab)} />}
                 {activeTab === 'EXPENSE' && <ExpenseSplitter />}
