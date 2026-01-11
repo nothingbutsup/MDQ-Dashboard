@@ -76,8 +76,8 @@ export const ChoreDraft: React.FC<ChoreDraftProps> = ({ isSidebarOpen }) => {
         <div className="animate-fade-in pb-12 max-w-xl mx-auto flex flex-col gap-6 sm:gap-8">
             {/* Chore Selection */}
             <section>
-                <h2 className="text-[10px] sm:text-xs font-bold text-[#cac4d0] uppercase tracking-widest mb-3 sm:mb-4 px-2">1. The Mission</h2>
-                <div className="grid grid-cols-1 gap-2.5 sm:gap-3">
+                <h2 className="text-[10px] sm:text-xs font-bold text-[#cac4d0] uppercase tracking-widest mb-3 sm:mb-4 px-2">1. Chores</h2>
+                <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
                     {CHORES.map(chore => {
                         const isSelected = selectedChoreId === chore.id;
                         return (
@@ -85,13 +85,13 @@ export const ChoreDraft: React.FC<ChoreDraftProps> = ({ isSidebarOpen }) => {
                                 key={chore.id}
                                 onClick={() => setSelectedChoreId(chore.id)}
                                 className={`
-                                    cursor-pointer p-3 sm:p-5 rounded-2xl sm:rounded-[28px] flex items-center justify-between transition-all duration-200 shadow-sm
+                                    cursor-pointer p-2.5 sm:p-3.5 rounded-xl sm:rounded-[22px] flex items-center justify-between transition-all duration-200 shadow-sm
                                     ${isSelected ? 'bg-[#4f378b] text-[#eaddff]' : 'bg-[#2b2930] hover:bg-[#332f37] border border-transparent'}
                                 `}
                             >
-                                <div className="flex items-center gap-3 sm:gap-5">
-                                    <div className={`w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center ${isSelected ? 'bg-[#eaddff] text-[#381e72]' : 'bg-[#49454f] text-[#cac4d0]'}`}>
-                                        <chore.Icon className="w-4.5 h-4.5 sm:w-6 sm:h-6" />
+                                <div className="flex items-center gap-3 sm:gap-4">
+                                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center ${isSelected ? 'bg-[#eaddff] text-[#381e72]' : 'bg-[#49454f] text-[#cac4d0]'}`}>
+                                        <chore.Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-sm sm:text-base leading-tight">{chore.name}</h3>
