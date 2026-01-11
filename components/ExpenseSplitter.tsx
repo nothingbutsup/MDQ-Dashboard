@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, SplitMode, Settlement } from '../types';
 import { USERS } from '../constants';
-import { Check, Receipt } from 'lucide-react';
+import { Check, Receipt, Users } from 'lucide-react';
 
 export const ExpenseSplitter: React.FC = () => {
     const [mode, setMode] = useState<SplitMode>('EQUAL');
@@ -36,19 +36,20 @@ export const ExpenseSplitter: React.FC = () => {
         }
     };
 
-    const { settlements, totalConsumed, isValid, allocationStatus } = useMemo(() => {
+    const { settlements, totalConsumed, isValid, allocationStatus, fairShare } = useMemo(() => {
         const totalPaid = (Object.values(amounts) as number[]).reduce((a, b) => a + b, 0);
         let calculatedConsumption: Record<string, number> = {};
         let valid = true;
         let consumedSum = 0;
+        let fShare = 0;
 
         if (mode === 'EQUAL') {
             const splitters = USERS.filter(u => splitting[u.id]);
             const splitCount = splitters.length;
-            const fairShare = splitCount > 0 ? totalPaid / splitCount : 0;
+            fShare = splitCount > 0 ? totalPaid / splitCount : 0;
             
             USERS.forEach(u => {
-                calculatedConsumption[u.id] = splitting[u.id] ? fairShare : 0;
+                calculatedConsumption[u.id] = splitting[u.id] ? fShare : 0;
             });
             consumedSum = totalPaid;
         } else {
@@ -125,7 +126,8 @@ export const ExpenseSplitter: React.FC = () => {
             settlements: results,
             totalConsumed: consumedSum,
             isValid: valid,
-            allocationStatus: allocStatus
+            allocationStatus: allocStatus,
+            fairShare: fShare
         };
 
     }, [amounts, shares, splitting, mode]);
@@ -253,38 +255,58 @@ export const ExpenseSplitter: React.FC = () => {
                 </div>
             </div>
 
-            {/* Results Card */}
-            {settlements.length > 0 && isValid && (
-                <div className="bg-[#4f378b] rounded-[32px] p-6 xs:p-8 shadow-lg animate-scale-up">
-                    <h3 className="text-xl xs:text-2xl font-black text-[#eaddff] tracking-tighter mb-6 px-1 truncate">
-                        {title.trim() ? title : "Settlements"}
-                    </h3>
-                    <div className="space-y-3">
-                        {settlements.map((s, idx) => (
-                            <div key={idx} className="flex flex-wrap items-center justify-between gap-3 bg-[#2b2930] p-4 rounded-2xl shadow-sm border border-transparent hover:border-[#d0bcfe]/20 transition-all">
-                                <div className="flex items-center gap-3 xs:gap-4 min-w-0">
-                                    <div className="flex -space-x-2 shrink-0">
-                                        <div className={`w-8 xs:w-9 h-8 xs:h-9 rounded-full flex items-center justify-center border-2 border-[#2b2930] ${s.from.colorBg} ${s.from.colorText} ${s.from.colorBorder}`}>
-                                            <span className="text-[9px] xs:text-[10px] font-black">{s.from.name.substring(0,1)}</span>
+            {/* Results area */}
+            <div className="space-y-4">
+                {/* Settlements Card */}
+                {settlements.length > 0 && isValid && (
+                    <div className="bg-[#4f378b] rounded-[32px] p-6 xs:p-8 shadow-lg animate-scale-up">
+                        <h3 className="text-xl xs:text-2xl font-black text-[#eaddff] tracking-tighter mb-6 px-1 truncate">
+                            {title.trim() ? title : "Settlements"}
+                        </h3>
+                        <div className="space-y-3">
+                            {settlements.map((s, idx) => (
+                                <div key={idx} className="flex flex-wrap items-center justify-between gap-3 bg-[#2b2930] p-4 rounded-2xl shadow-sm border border-transparent hover:border-[#d0bcfe]/20 transition-all">
+                                    <div className="flex items-center gap-3 xs:gap-4 min-w-0">
+                                        <div className="flex -space-x-2 shrink-0">
+                                            <div className={`w-8 xs:w-9 h-8 xs:h-9 rounded-full flex items-center justify-center border-2 border-[#2b2930] ${s.from.colorBg} ${s.from.colorText} ${s.from.colorBorder}`}>
+                                                <span className="text-[9px] xs:text-[10px] font-black">{s.from.name.substring(0,1)}</span>
+                                            </div>
+                                            <div className={`w-8 xs:w-9 h-8 xs:h-9 rounded-full flex items-center justify-center border-2 border-[#2b2930] ${s.to.colorBg} ${s.to.colorText} ${s.to.colorBorder}`}>
+                                                <span className="text-[9px] xs:text-[10px] font-black">{s.to.name.substring(0,1)}</span>
+                                            </div>
                                         </div>
-                                        <div className={`w-8 xs:w-9 h-8 xs:h-9 rounded-full flex items-center justify-center border-2 border-[#2b2930] ${s.to.colorBg} ${s.to.colorText} ${s.to.colorBorder}`}>
-                                            <span className="text-[9px] xs:text-[10px] font-black">{s.to.name.substring(0,1)}</span>
+                                        <div className="text-xs xs:text-sm min-w-0">
+                                            <div className="flex flex-wrap items-center gap-x-2">
+                                                <span className="text-[#eaddff] font-bold truncate">{s.from.name}</span>
+                                                <span className="text-[#cac4d0] opacity-50 shrink-0">→</span>
+                                                <span className="text-[#eaddff] font-bold truncate">{s.to.name}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="text-xs xs:text-sm min-w-0">
-                                        <div className="flex flex-wrap items-center gap-x-2">
-                                            <span className="text-[#eaddff] font-bold truncate">{s.from.name}</span>
-                                            <span className="text-[#cac4d0] opacity-50 shrink-0">→</span>
-                                            <span className="text-[#eaddff] font-bold truncate">{s.to.name}</span>
-                                        </div>
-                                    </div>
+                                    <span className="font-mono font-bold text-[#b2f2bb] text-sm xs:text-base whitespace-nowrap">${s.amount.toFixed(2)}</span>
                                 </div>
-                                <span className="font-mono font-bold text-[#b2f2bb] text-sm xs:text-base whitespace-nowrap">${s.amount.toFixed(2)}</span>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+
+                {/* Per Person Box - Moved below settlements */}
+                {mode === 'EQUAL' && totalConsumed > 0 && (
+                    <div className="bg-[#1e2923] border border-[#10b981]/20 px-6 py-5 rounded-[28px] flex items-center justify-between shadow-md animate-scale-up">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-2xl bg-[#10b981]/10 flex items-center justify-center text-[#10b981]">
+                                <Users size={20} />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-xs font-black text-[#10b981] uppercase tracking-widest">Per person</span>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <span className="text-2xl font-bold text-[#10b981] font-mono leading-none">${fairShare.toFixed(2)}</span>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
