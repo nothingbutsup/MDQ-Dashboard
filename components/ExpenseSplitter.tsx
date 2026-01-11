@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, SplitMode, Settlement } from '../types';
 import { USERS } from '../constants';
-import { Check, DollarSign, AlertCircle, ArrowRight } from 'lucide-react';
+import { Check, DollarSign, AlertCircle, ArrowRight, Receipt, TrendingUp, TrendingDown } from 'lucide-react';
 
 export const ExpenseSplitter: React.FC = () => {
     const [mode, setMode] = useState<SplitMode>('EQUAL');
@@ -12,7 +12,6 @@ export const ExpenseSplitter: React.FC = () => {
         USERS.reduce((acc, user) => ({ ...acc, [user.id]: true }), {})
     );
 
-    // Reset values when switching modes to avoid confusion (matching original app behavior)
     useEffect(() => {
         setAmounts({});
         setShares({});
@@ -31,7 +30,6 @@ export const ExpenseSplitter: React.FC = () => {
             const newState = { ...prev, [userId]: !prev[userId] };
             return newState;
         });
-        // Note: The original app cleared amounts if unchecked in Unequal mode.
         if (mode === 'UNEQUAL' && splitting[userId]) {
             setAmounts(prev => ({ ...prev, [userId]: 0 }));
             setShares(prev => ({ ...prev, [userId]: 0 }));
@@ -52,9 +50,8 @@ export const ExpenseSplitter: React.FC = () => {
             USERS.forEach(u => {
                 calculatedConsumption[u.id] = splitting[u.id] ? fairShare : 0;
             });
-            consumedSum = totalPaid; // In equal mode, we assume consumption matches payment perfectly
+            consumedSum = totalPaid;
         } else {
-            // UNEQUAL MODE
             consumedSum = USERS.reduce<number>((sum, u) => {
                 return sum + (splitting[u.id] ? (shares[u.id] || 0) : 0);
             }, 0);
@@ -63,12 +60,10 @@ export const ExpenseSplitter: React.FC = () => {
                 calculatedConsumption[u.id] = splitting[u.id] ? (shares[u.id] || 0) : 0;
             });
 
-            // Validation (Paid must equal Consumed)
             const diff = totalPaid - consumedSum;
             if (Math.abs(diff) > 0.1) valid = false;
         }
 
-        // Calculate Settlements
         const balancesMap: Record<string, number> = {};
         USERS.forEach(u => balancesMap[u.id] = 0);
 
@@ -112,20 +107,21 @@ export const ExpenseSplitter: React.FC = () => {
             if (Math.abs(creditor.balance) < 0.01) j++;
         }
 
-        let allocationStatus = { diff: 0, percent: 0, message: '', type: 'neutral' };
+        // Calculation of allocation status for Dutch mode
+        let allocStatus = { diff: 0, percent: 100, message: 'Balanced', type: 'success' };
         if (mode === 'UNEQUAL') {
-             const diff = totalPaid - consumedSum;
-             let percent = 0;
-             if (consumedSum > 0) percent = (totalPaid / consumedSum) * 100;
-             else if (totalPaid > 0) percent = 100;
-
-             if (Math.abs(diff) < 0.1) {
-                 allocationStatus = { diff: 0, percent: 100, message: 'Balanced', type: 'success' };
-             } else if (diff > 0) {
-                 allocationStatus = { diff, percent: Math.min(percent, 100), message: `$${diff.toFixed(2)} over`, type: 'warning' };
-             } else {
-                 allocationStatus = { diff, percent: Math.min(percent, 100), message: `Missing $${Math.abs(diff).toFixed(2)}`, type: 'error' };
-             }
+            const diff = totalPaid - consumedSum;
+            const percent = totalPaid > 0 ? (consumedSum / totalPaid) * 100 : 0;
+            
+            if (Math.abs(diff) < 0.1) {
+                allocStatus = { diff: 0, percent: 100, message: 'Balanced', type: 'success' };
+            } else if (diff > 0) {
+                // Paid is more than consumed, missing allocation
+                allocStatus = { diff, percent: Math.min(percent, 100), message: `$${diff.toFixed(2)} missing`, type: 'error' };
+            } else {
+                // Consumed is more than paid, over allocation
+                allocStatus = { diff, percent: 100, message: `$${Math.abs(diff).toFixed(2)} over`, type: 'warning' };
+            }
         }
 
         return {
@@ -133,230 +129,166 @@ export const ExpenseSplitter: React.FC = () => {
             totalSpent: totalPaid,
             totalConsumed: consumedSum,
             isValid: valid,
-            allocationStatus
+            allocationStatus: allocStatus
         };
 
     }, [amounts, shares, splitting, mode]);
 
     return (
-        <div className="space-y-8 animate-fade-in">
-            {/* Input Section */}
-            <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl shadow-black/50">
-                <div className="bg-slate-800/50 px-6 py-4 border-b border-slate-700/50 flex justify-between items-center">
-                    <h2 className="font-bold text-slate-200 text-lg flex items-center gap-2">
-                        <DollarSign className="w-5 h-5 text-indigo-400" />
-                        Details
+        <div className="space-y-6 animate-fade-in max-w-lg mx-auto">
+            {/* Input Card */}
+            <div className="bg-[#2b2930] rounded-[32px] overflow-hidden shadow-md">
+                <div className="px-6 py-4 border-b border-[#49454f] flex justify-between items-center bg-[#332f37]">
+                    <h2 className="font-bold text-[#e6e1e5] text-lg flex items-center gap-3">
+                        <Receipt className="w-6 h-6 text-[#d0bcfe]" />
+                        New Expense
                     </h2>
                     
                     <div className="flex items-center gap-3">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${mode === 'EQUAL' ? 'text-slate-400' : 'text-indigo-400'}`}>
-                            {mode === 'EQUAL' ? 'Equal Split' : 'Dutch Split'}
+                        <span className="text-xs font-bold text-[#cac4d0] uppercase tracking-wider">
+                            {mode === 'EQUAL' ? 'Split Equal' : 'Dutch'}
                         </span>
                         <button 
                             onClick={() => setMode(m => m === 'EQUAL' ? 'UNEQUAL' : 'EQUAL')}
-                            className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${mode === 'UNEQUAL' ? 'bg-indigo-600' : 'bg-slate-600'}`}
+                            className={`w-11 h-6 rounded-full p-1 transition-colors duration-300 ${mode === 'UNEQUAL' ? 'bg-[#d0bcfe]' : 'bg-[#49454f]'}`}
                         >
-                            <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${mode === 'UNEQUAL' ? 'translate-x-6' : 'translate-x-0'}`} />
+                            <div className={`w-4 h-4 rounded-full bg-[#1c1b1f] shadow-sm transition-transform duration-300 ${mode === 'UNEQUAL' ? 'translate-x-5' : 'translate-x-0'}`} />
                         </button>
                     </div>
                 </div>
 
-                <div className="p-6 space-y-6">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Event Title</label>
+                <div className="p-6 space-y-8">
+                    {/* Material Text Field */}
+                    <div className="relative group">
+                        <label className="block text-xs font-bold text-[#d0bcfe] uppercase tracking-widest mb-2 px-1">Description</label>
                         <input 
                             type="text" 
-                            placeholder="e.g. Saturday BBQ"
+                            placeholder="What did you buy?"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                            className="w-full bg-[#1c1b1f] border-b-2 border-[#49454f] focus:border-[#d0bcfe] px-3 py-4 text-base text-[#e6e1e5] placeholder-[#49454f] focus:outline-none transition-all rounded-t-lg"
                         />
                     </div>
 
-                    {/* Table Header */}
-                    <div className="grid grid-cols-12 gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider px-1">
-                        <div className="col-span-5">Member</div>
-                        {mode === 'EQUAL' ? (
-                            <>
-                                <div className="col-span-4 text-right">Paid</div>
-                                <div className="col-span-3 text-center">Split?</div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="col-span-3 text-right text-indigo-400">Consumed</div>
-                                <div className="col-span-3 text-right text-slate-400">Paid</div>
-                                <div className="col-span-1 text-center">Inc?</div>
-                            </>
-                        )}
-                    </div>
-
-                    {/* User Rows */}
-                    <div className="space-y-3">
+                    {/* Member List */}
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center px-2 mb-2">
+                            <span className="text-xs font-bold text-[#e6e1e5] uppercase tracking-widest opacity-90">Participants</span>
+                            <div className="flex gap-4">
+                                <span className="text-[11px] text-white uppercase font-black w-24 text-right">Paid</span>
+                                {mode === 'UNEQUAL' && (
+                                    <span className="text-[11px] text-white uppercase font-black w-24 text-right">Consumed</span>
+                                )}
+                            </div>
+                        </div>
+                        
                         {USERS.map(user => {
                             const isIncluded = splitting[user.id];
                             const paidVal = amounts[user.id] > 0 ? amounts[user.id] : '';
                             const consumedVal = shares[user.id] > 0 ? shares[user.id] : '';
 
                             return (
-                                <div key={user.id} className={`grid grid-cols-12 gap-2 items-center group transition-opacity ${!isIncluded ? 'opacity-50' : 'opacity-100'}`}>
-                                    {/* Name */}
-                                    <div className={`${mode === 'EQUAL' ? 'col-span-5' : 'col-span-5'} flex items-center gap-3`}>
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${user.colorBg} ${user.colorText} ${user.colorBorder}`}>
-                                            <span className="text-xs font-bold">{user.name.substring(0, 2).toUpperCase()}</span>
-                                        </div>
-                                        <span className="text-sm font-medium text-slate-300 truncate hidden sm:block">{user.name}</span>
-                                        <span className="text-sm font-medium text-slate-300 truncate sm:hidden">{user.name.substring(0,3)}</span>
+                                <div key={user.id} className="flex items-center gap-3 group">
+                                    <div 
+                                        onClick={() => handleSplitToggle(user.id)}
+                                        className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors cursor-pointer shrink-0 ${isIncluded ? 'bg-[#d0bcfe] border-[#d0bcfe] text-[#381e72]' : 'border-[#49454f] text-transparent'}`}
+                                    >
+                                        <Check className="w-4 h-4" strokeWidth={3} />
                                     </div>
 
-                                    {mode === 'EQUAL' ? (
-                                        <>
-                                            <div className="col-span-4 relative">
-                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500 text-xs">$</span>
-                                                <input 
-                                                    type="number" 
-                                                    min="0"
-                                                    placeholder="0"
-                                                    value={paidVal}
-                                                    onChange={(e) => handleAmountChange(user.id, e.target.value)}
-                                                    className="w-full bg-slate-900 border border-slate-700 rounded-md py-1.5 pl-6 pr-2 text-right text-sm font-mono text-white focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-700"
-                                                />
-                                            </div>
-                                            <div className="col-span-3 flex justify-center">
-                                                <button 
-                                                    onClick={() => handleSplitToggle(user.id)}
-                                                    className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isIncluded ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-600 text-transparent'}`}
-                                                >
-                                                    <Check className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            {/* Consumed Input */}
-                                            <div className="col-span-3 relative">
+                                    <div className="flex-grow flex items-center gap-2 min-w-0">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border shrink-0 ${user.colorBg} ${user.colorText} ${user.colorBorder}`}>
+                                            <span className="text-[11px] font-black">{user.name.substring(0, 1)}</span>
+                                        </div>
+                                        <span className={`text-sm font-bold transition-colors truncate ${isIncluded ? 'text-[#e6e1e5]' : 'text-[#49454f]'}`}>{user.name}</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <div className="w-24 relative">
+                                            <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[#49454f] text-[10px] font-bold">$</span>
+                                            <input 
+                                                type="number" min="0" placeholder="0"
+                                                disabled={!isIncluded}
+                                                value={paidVal}
+                                                onChange={(e) => handleAmountChange(user.id, e.target.value)}
+                                                className="w-full bg-[#1c1b1f] border border-[#49454f] focus:border-[#d0bcfe] rounded-lg py-2 pl-4 pr-1 text-right text-sm font-mono text-white focus:outline-none placeholder-[#49454f] disabled:opacity-30"
+                                            />
+                                        </div>
+                                        {mode === 'UNEQUAL' && (
+                                            <div className="w-24 relative">
                                                 <input 
                                                     type="number" min="0" placeholder="0"
                                                     disabled={!isIncluded}
                                                     value={consumedVal}
                                                     onChange={(e) => handleShareChange(user.id, e.target.value)}
-                                                    className="w-full bg-indigo-900/20 border border-indigo-500/30 rounded-md py-1.5 px-1 text-right text-sm font-mono text-indigo-200 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-indigo-900/50 disabled:opacity-50"
+                                                    className="w-full bg-[#1c1b1f] border border-[#49454f] focus:border-[#d0bcfe] rounded-lg py-2 px-1 text-right text-sm font-mono text-[#d0bcfe] focus:outline-none placeholder-[#49454f] disabled:opacity-30"
                                                 />
                                             </div>
-                                            {/* Paid Input */}
-                                            <div className="col-span-3 relative">
-                                                <input 
-                                                    type="number" min="0" placeholder="0"
-                                                    disabled={!isIncluded}
-                                                    value={paidVal}
-                                                    onChange={(e) => handleAmountChange(user.id, e.target.value)}
-                                                    className="w-full bg-slate-900 border border-slate-700 rounded-md py-1.5 px-1 text-right text-sm font-mono text-slate-300 focus:ring-1 focus:ring-indigo-500 focus:outline-none placeholder-slate-700 disabled:opacity-50"
-                                                />
-                                            </div>
-                                            <div className="col-span-1 flex justify-center">
-                                                <button 
-                                                    onClick={() => handleSplitToggle(user.id)}
-                                                    className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isIncluded ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-600 text-transparent'}`}
-                                                >
-                                                    <Check className="w-3 h-3" />
-                                                </button>
-                                            </div>
-                                        </>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                             );
                         })}
                     </div>
 
-                    {/* Unequal Tools */}
+                    {/* Progress Bar and Status (Dutch only) */}
                     {mode === 'UNEQUAL' && (
-                        <div className={`mt-6 p-4 rounded-xl border ${allocationStatus.type === 'success' ? 'bg-emerald-900/20 border-emerald-900/50' : allocationStatus.type === 'warning' ? 'bg-yellow-900/20 border-yellow-900/50' : 'bg-rose-900/20 border-rose-900/50'}`}>
-                            <div className="flex justify-between items-center mb-2">
-                                <span className={`text-xs font-bold uppercase tracking-wide ${allocationStatus.type === 'success' ? 'text-emerald-400' : allocationStatus.type === 'warning' ? 'text-yellow-400' : 'text-rose-400'}`}>
-                                    Allocation Status
+                        <div className="pt-2 space-y-3">
+                            <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-widest px-1">
+                                <span className="text-[#cac4d0]">Progress</span>
+                                <span className={`${allocationStatus.type === 'success' ? 'text-emerald-400' : allocationStatus.type === 'warning' ? 'text-yellow-400' : 'text-rose-400'}`}>
+                                    {allocationStatus.message}
                                 </span>
-                                <span className="font-mono text-sm font-bold text-slate-300">{allocationStatus.message}</span>
                             </div>
-                            <div className="w-full bg-slate-800 rounded-full h-2 mb-1 overflow-hidden">
+                            <div className="h-2 bg-[#1c1b1f] rounded-full overflow-hidden border border-[#49454f]">
                                 <div 
-                                    className={`h-2 rounded-full transition-all duration-300 ${allocationStatus.type === 'success' ? 'bg-emerald-500' : allocationStatus.type === 'warning' ? 'bg-yellow-500' : 'bg-rose-500'}`} 
+                                    className={`h-full transition-all duration-500 rounded-full ${allocationStatus.type === 'success' ? 'bg-emerald-500' : allocationStatus.type === 'warning' ? 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.4)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]'}`}
                                     style={{ width: `${allocationStatus.percent}%` }}
                                 />
                             </div>
                         </div>
                     )}
 
-                    <div className="pt-4 border-t border-dashed border-slate-700 flex justify-between items-center">
-                        <span className="font-bold text-slate-500 text-sm">TOTAL {mode === 'EQUAL' ? 'SPENT' : 'BILL'}</span>
-                        <span className="font-mono text-xl font-bold text-white">${(mode === 'EQUAL' ? totalSpent : totalConsumed).toFixed(2)}</span>
+                    {/* Total Summary Row */}
+                    <div className="pt-8 border-t border-[#49454f] flex flex-col items-center">
+                        <div className="text-center space-y-1">
+                            <span className="block text-xs font-black text-[#cac4d0] uppercase tracking-[0.2em]">Total</span>
+                            <span className="text-4xl font-light text-[#d0bcfe] tracking-tighter">${totalConsumed.toFixed(2)}</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Results Section */}
-            <div className="glass-panel rounded-2xl overflow-hidden shadow-2xl relative">
-                <div className="bg-slate-800/50 px-6 py-5 border-b border-slate-700/50 flex justify-between items-center">
-                    <h2 className="font-bold text-slate-200 text-lg">{title.trim() || 'Settlements'}</h2>
-                    <span className="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wide">
-                        {isValid ? settlements.length : 'Error'} Payments
-                    </span>
-                </div>
-
-                <div className="p-6 bg-slate-900/30">
-                    {!isValid && mode === 'UNEQUAL' ? (
-                        <div className="text-center py-8 bg-rose-500/10 rounded-xl border border-rose-500/20">
-                            <AlertCircle className="w-8 h-8 text-rose-500 mx-auto mb-2" />
-                            <p className="font-bold text-rose-400">Amounts don't match!</p>
-                            <p className="text-xs mt-1 text-rose-300/70">Total Consumed must equal Total Paid.</p>
-                        </div>
-                    ) : settlements.length === 0 ? (
-                        <div className="text-center py-12 text-slate-500 text-sm">
-                            <p>Enter amounts above to generate a split.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 gap-3">
-                            {settlements.map((s, idx) => (
-                                <div key={idx} className="flex items-center justify-between bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-sm">
-                                    <div className="flex items-center gap-3">
-                                        <div className="relative">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${s.from.colorBg} ${s.from.colorText} ${s.from.colorBorder}`}>
-                                                <span className="text-xs font-bold">{s.from.name.substring(0,2).toUpperCase()}</span>
-                                            </div>
-                                            <div className="absolute -right-1 -bottom-1 bg-slate-800 rounded-full p-0.5 border border-slate-700">
-                                                <ArrowRight className="w-3 h-3 text-slate-400" />
-                                            </div>
+            {/* Results Card */}
+            {settlements.length > 0 && isValid && (
+                <div className="bg-[#4f378b] rounded-[32px] p-8 shadow-lg animate-scale-up">
+                    <h3 className="text-2xl font-black text-[#eaddff] tracking-tighter mb-6 px-1 truncate">
+                        {title.trim() ? title : "Settlements"}
+                    </h3>
+                    <div className="space-y-3">
+                        {settlements.map((s, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-[#2b2930] p-4 rounded-2xl shadow-sm border border-transparent hover:border-[#d0bcfe]/20 transition-all">
+                                <div className="flex items-center gap-4">
+                                    <div className="flex -space-x-2">
+                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 border-[#2b2930] ${s.from.colorBg} ${s.from.colorText} ${s.from.colorBorder}`}>
+                                            <span className="text-[10px] font-black">{s.from.name.substring(0,1)}</span>
                                         </div>
-                                        <div className="text-sm text-slate-300">
-                                            <span className="font-bold text-white">{s.from.name}</span> pays <span className="font-bold text-white">{s.to.name}</span>
+                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 border-[#2b2930] ${s.to.colorBg} ${s.to.colorText} ${s.to.colorBorder}`}>
+                                            <span className="text-[10px] font-black">{s.to.name.substring(0,1)}</span>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-mono font-bold text-emerald-400">${s.amount.toFixed(2)}</span>
+                                    <div className="text-sm">
+                                        <span className="text-[#eaddff] font-bold">{s.from.name}</span>
+                                        <span className="text-[#cac4d0] mx-2 opacity-50">→</span>
+                                        <span className="text-[#eaddff] font-bold">{s.to.name}</span>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Per Person Summary (Equal Mode Only) */}
-                    {mode === 'EQUAL' && totalSpent > 0 && settlements.length >= 0 && (
-                        <div className="mt-5 bg-slate-950/50 rounded-xl p-4 flex justify-between items-center border border-slate-800">
-                            <div className="flex items-center gap-2">
-                                <DollarSign className="w-4 h-4 text-slate-500" />
-                                <span className="text-slate-400 font-medium text-sm">Per person</span>
+                                <span className="font-mono font-bold text-[#b2f2bb] text-lg">${s.amount.toFixed(2)}</span>
                             </div>
-                            <span className="text-slate-200 font-bold font-mono text-lg">
-                                ${(totalSpent / USERS.filter(u => splitting[u.id]).length).toFixed(2)}
-                            </span>
-                        </div>
-                    )}
-
-                    <div className="mt-6 text-center">
-                        <span className="text-[10px] text-slate-600 uppercase tracking-widest">
-                            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                        </span>
+                        ))}
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

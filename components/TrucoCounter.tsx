@@ -7,29 +7,16 @@ type PointGroupProps = {
 };
 
 const Matchsticks: React.FC<PointGroupProps> = ({ value, color }) => {
-    if (value === 0) return <div className="w-12 h-12" />;
-
-    const strokeWidth = "3";
-    
-    // Traditional "Casita" / Box method
-    // 1: Bottom
-    // 2: + Right
-    // 3: + Top
-    // 4: + Left (Box closed)
-    // 5: Diagonal
+    if (value === 0) return <div className="w-10 h-10" />;
+    const strokeWidth = "4";
     
     return (
-        <div className="w-12 h-12 relative p-1 animate-scale-up">
+        <div className="w-10 h-10 relative p-1 animate-scale-up">
              <svg width="100%" height="100%" viewBox="0 0 40 40" className="overflow-visible">
-                {/* 1: Bottom */}
                 {value >= 1 && <path d="M 5 35 L 35 35" className={color} strokeWidth={strokeWidth} strokeLinecap="round" />}
-                {/* 2: Right */}
                 {value >= 2 && <path d="M 35 35 L 35 5" className={color} strokeWidth={strokeWidth} strokeLinecap="round" />}
-                {/* 3: Top */}
                 {value >= 3 && <path d="M 35 5 L 5 5" className={color} strokeWidth={strokeWidth} strokeLinecap="round" />}
-                {/* 4: Left */}
                 {value >= 4 && <path d="M 5 5 L 5 35" className={color} strokeWidth={strokeWidth} strokeLinecap="round" />}
-                {/* 5: Diagonal */}
                 {value >= 5 && <path d="M 5 35 L 35 5" className={color} strokeWidth={strokeWidth} strokeLinecap="round" />}
              </svg>
         </div>
@@ -38,8 +25,8 @@ const Matchsticks: React.FC<PointGroupProps> = ({ value, color }) => {
 
 export const TrucoCounter: React.FC = () => {
     const [limit, setLimit] = useState<15 | 30>(30);
-    const [scoreA, setScoreA] = useState(0); // Puberos
-    const [scoreB, setScoreB] = useState(0); // Mixeros
+    const [scoreA, setScoreA] = useState(0); 
+    const [scoreB, setScoreB] = useState(0); 
 
     const changeScore = (team: 'A' | 'B', delta: number) => {
         if (team === 'A') {
@@ -50,14 +37,15 @@ export const TrucoCounter: React.FC = () => {
     };
 
     const reset = () => {
-        setScoreA(0);
-        setScoreB(0);
+        if (window.confirm("Reset scores?")) {
+            setScoreA(0);
+            setScoreB(0);
+        }
     };
     
     const toggleLimit = () => {
         const newLimit = limit === 30 ? 15 : 30;
         setLimit(newLimit);
-        // Cap scores if switching down
         if (scoreA > newLimit) setScoreA(newLimit);
         if (scoreB > newLimit) setScoreB(newLimit);
     };
@@ -75,105 +63,96 @@ export const TrucoCounter: React.FC = () => {
         }
         
         return (
-            <div className="flex flex-col gap-4 items-center">
-                {/* First 15 points (0-15) */}
-                <div className="grid grid-cols-3 gap-x-4 gap-y-4 justify-items-center">
+            <div className="flex flex-col gap-6 items-center w-full">
+                <div className="grid grid-cols-3 gap-3">
                     {groups.slice(0, 3)}
                 </div>
-                
-                {/* Divider if we have more than 15 points (Second Half) */}
                 {groups.length > 3 && (
-                    <>
-                        <div className="w-full h-px bg-slate-700/50 my-1" />
-                        <div className="grid grid-cols-3 gap-x-4 gap-y-4 justify-items-center">
-                            {groups.slice(3)}
-                        </div>
-                    </>
+                    <div className="grid grid-cols-3 gap-3 opacity-80 pt-4 border-t border-[#49454f]">
+                        {groups.slice(3)}
+                    </div>
                 )}
             </div>
         );
     };
 
     return (
-        <div className="animate-fade-in space-y-6 pb-20">
-             {/* Header / Controls */}
-             <div className="glass-panel p-4 rounded-xl flex justify-between items-center shadow-lg">
+        <div className="animate-fade-in space-y-8 max-w-2xl mx-auto">
+             {/* Material Control Bar */}
+             <div className="bg-[#2b2930] p-3 rounded-full flex justify-between items-center shadow-lg px-6">
                 <button 
                     onClick={toggleLimit}
-                    className="px-4 py-2 bg-slate-800 rounded-lg text-xs font-bold text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors uppercase tracking-wider"
+                    className="h-10 px-6 rounded-full bg-[#49454f] text-xs font-bold text-[#eaddff] transition-all hover:bg-[#4f378b]"
                 >
-                    Max: {limit}
+                    Target: {limit}
                 </button>
                 
                 <div className="flex items-center gap-2">
-                    <Trophy className="text-yellow-500 w-5 h-5" />
-                    <h2 className="text-xl font-black italic tracking-tighter text-slate-100">
-                        TRUCO
-                    </h2>
+                    <Trophy size={20} className="text-[#ffd700]" />
+                    <span className="font-bold text-[#e6e1e5] tracking-widest text-sm">TRUCO SCORE</span>
                 </div>
 
                 <button 
                     onClick={reset}
-                    className="p-2 bg-slate-800 rounded-lg text-slate-300 border border-slate-700 hover:text-white hover:bg-slate-700 transition-colors"
+                    className="w-10 h-10 rounded-full bg-[#49454f] flex items-center justify-center text-[#cac4d0] hover:text-[#ffb4ab]"
                 >
                     <RotateCcw size={18} />
                 </button>
              </div>
 
-             {/* Score Board */}
-             <div className="glass-panel rounded-2xl overflow-hidden relative min-h-[500px] flex shadow-2xl border border-slate-700/50">
-                <div className="absolute inset-y-16 left-1/2 w-0.5 bg-gradient-to-b from-transparent via-slate-700/50 to-transparent -translate-x-1/2"></div>
+             {/* Score Board Card */}
+             <div className="bg-[#2b2930] rounded-[48px] overflow-hidden flex shadow-2xl min-h-[560px]">
                 
-                {/* Team A: Puberos */}
-                <div className="flex-1 flex flex-col relative bg-gradient-to-b from-indigo-900/10 to-transparent">
-                    <div className="p-4 pt-6 text-center border-b border-indigo-500/10">
-                        <h3 className="font-bold text-lg text-indigo-400 uppercase tracking-wider">Puberos</h3>
-                        <div className="text-4xl font-mono font-bold text-white mt-1 drop-shadow-lg">{scoreA}</div>
+                {/* Team A */}
+                <div className="flex-1 flex flex-col border-r border-[#49454f]">
+                    <div className="p-8 text-center bg-[#332f37]">
+                        <h3 className="text-xs font-bold text-[#d0bcfe] uppercase tracking-[0.2em] mb-2">Team A</h3>
+                        <div className="text-6xl font-light text-[#e6e1e5]">{scoreA}</div>
                     </div>
                     
-                    <div className="flex-1 p-6 flex flex-col items-center">
-                         {renderPoints(scoreA, "stroke-indigo-300")}
+                    <div className="flex-1 p-10 flex flex-col items-center justify-start overflow-y-auto no-scrollbar">
+                         {renderPoints(scoreA, "stroke-[#d0bcfe]")}
                     </div>
 
-                    <div className="p-4 grid grid-cols-2 gap-2 mt-auto border-t border-indigo-500/10 bg-indigo-950/20">
-                        <button 
-                            onClick={() => changeScore('A', -1)}
-                            className="bg-slate-800/80 hover:bg-rose-950/50 hover:border-rose-500/30 border border-slate-700 rounded-lg h-14 flex justify-center items-center transition-all active:scale-95 group"
-                        >
-                            <Minus size={20} className="text-slate-400 group-hover:text-rose-400" />
-                        </button>
+                    <div className="p-6 flex flex-col gap-3 bg-[#332f37]">
                         <button 
                             onClick={() => changeScore('A', 1)}
-                            className="bg-indigo-600/20 hover:bg-indigo-500/30 border border-indigo-500/30 rounded-lg h-14 flex justify-center items-center transition-all active:scale-95"
+                            className="w-full h-16 rounded-[24px] bg-[#d0bcfe] text-[#381e72] flex items-center justify-center shadow-md active:scale-95"
                         >
-                            <Plus size={24} className="text-indigo-400" />
+                            <Plus size={32} />
+                        </button>
+                        <button 
+                            onClick={() => changeScore('A', -1)}
+                            className="w-full h-12 rounded-[24px] bg-[#49454f] text-[#cac4d0] flex items-center justify-center active:scale-95"
+                        >
+                            <Minus size={24} />
                         </button>
                     </div>
                 </div>
 
-                {/* Team B: Mixeros */}
-                <div className="flex-1 flex flex-col relative bg-gradient-to-b from-emerald-900/10 to-transparent">
-                    <div className="p-4 pt-6 text-center border-b border-emerald-500/10">
-                        <h3 className="font-bold text-lg text-emerald-400 uppercase tracking-wider">Mixeros</h3>
-                        <div className="text-4xl font-mono font-bold text-white mt-1 drop-shadow-lg">{scoreB}</div>
+                {/* Team B */}
+                <div className="flex-1 flex flex-col">
+                    <div className="p-8 text-center bg-[#332f37]">
+                        <h3 className="text-xs font-bold text-[#b2f2bb] uppercase tracking-[0.2em] mb-2">Team B</h3>
+                        <div className="text-6xl font-light text-[#e6e1e5]">{scoreB}</div>
                     </div>
                     
-                    <div className="flex-1 p-6 flex flex-col items-center">
-                         {renderPoints(scoreB, "stroke-emerald-300")}
+                    <div className="flex-1 p-10 flex flex-col items-center justify-start overflow-y-auto no-scrollbar">
+                         {renderPoints(scoreB, "stroke-[#b2f2bb]")}
                     </div>
 
-                    <div className="p-4 grid grid-cols-2 gap-2 mt-auto border-t border-emerald-500/10 bg-emerald-950/20">
-                        <button 
-                            onClick={() => changeScore('B', -1)}
-                            className="bg-slate-800/80 hover:bg-rose-950/50 hover:border-rose-500/30 border border-slate-700 rounded-lg h-14 flex justify-center items-center transition-all active:scale-95 group"
-                        >
-                            <Minus size={20} className="text-slate-400 group-hover:text-rose-400" />
-                        </button>
+                    <div className="p-6 flex flex-col gap-3 bg-[#332f37]">
                         <button 
                             onClick={() => changeScore('B', 1)}
-                            className="bg-emerald-600/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg h-14 flex justify-center items-center transition-all active:scale-95"
+                            className="w-full h-16 rounded-[24px] bg-[#b2f2bb] text-[#00391c] flex items-center justify-center shadow-md active:scale-95"
                         >
-                            <Plus size={24} className="text-emerald-400" />
+                            <Plus size={32} />
+                        </button>
+                        <button 
+                            onClick={() => changeScore('B', -1)}
+                            className="w-full h-12 rounded-[24px] bg-[#49454f] text-[#cac4d0] flex items-center justify-center active:scale-95"
+                        >
+                            <Minus size={24} />
                         </button>
                     </div>
                 </div>
