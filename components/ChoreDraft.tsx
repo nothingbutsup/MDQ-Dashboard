@@ -73,7 +73,7 @@ export const ChoreDraft: React.FC<ChoreDraftProps> = ({ isSidebarOpen }) => {
     };
 
     return (
-        <div className="animate-fade-in pb-24 sm:pb-32 max-w-xl mx-auto flex flex-col gap-6 sm:gap-8">
+        <div className="animate-fade-in pb-12 max-w-xl mx-auto flex flex-col gap-6 sm:gap-8">
             {/* Chore Selection */}
             <section>
                 <h2 className="text-[10px] sm:text-xs font-bold text-[#cac4d0] uppercase tracking-widest mb-3 sm:mb-4 px-2">1. The Mission</h2>
@@ -108,7 +108,7 @@ export const ChoreDraft: React.FC<ChoreDraftProps> = ({ isSidebarOpen }) => {
             </section>
 
             {/* User Selection */}
-            <section className="mb-4">
+            <section>
                 <div className="flex justify-between items-end mb-3 sm:mb-4 px-2">
                     <h2 className="text-[10px] sm:text-xs font-bold text-[#cac4d0] uppercase tracking-widest">2. Candidates</h2>
                     <span className="text-[9px] sm:text-[10px] text-[#49454f] font-bold flex items-center gap-1">
@@ -157,17 +157,12 @@ export const ChoreDraft: React.FC<ChoreDraftProps> = ({ isSidebarOpen }) => {
                 </div>
             </section>
 
-            {/* Action Bar - Fixed Position centering with Sidebar consideration */}
-            <div 
-                className={`
-                    fixed bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 w-full max-w-sm px-6 z-40 transition-all duration-300
-                    ${isSidebarOpen ? 'lg:ml-[160px]' : 'lg:ml-0'}
-                `}
-            >
+            {/* Action Bar - Now centered and positioned closer to Candidates */}
+            <div className="flex justify-center px-6">
                 <button 
                     onClick={handleRunDraft}
                     disabled={!selectedChoreId || selectedUserIds.size === 0}
-                    className="w-full bg-[#d0bcfe] hover:bg-[#eaddff] text-[#381e72] font-bold py-4 sm:py-5 px-8 rounded-[24px] sm:rounded-[28px] shadow-2xl transition-all active:scale-95 disabled:opacity-30 disabled:grayscale flex items-center justify-center gap-3 border border-[#381e72]/10"
+                    className="w-full max-w-sm bg-[#d0bcfe] hover:bg-[#eaddff] text-[#381e72] font-bold py-4 sm:py-5 px-8 rounded-[24px] sm:rounded-[28px] shadow-2xl transition-all active:scale-95 disabled:opacity-30 disabled:grayscale flex items-center justify-center gap-3 border border-[#381e72]/10"
                 >
                     <Dice5 size={22} className="sm:size-6" />
                     <span className="tracking-widest uppercase text-sm sm:text-base">Start Draft</span>
