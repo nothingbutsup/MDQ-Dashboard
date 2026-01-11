@@ -279,7 +279,7 @@ export const ExpenseSplitter: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <span className="font-mono font-bold text-[#b2f2bb] text-base xs:text-lg whitespace-nowrap">${s.amount.toFixed(2)}</span>
+                                <span className="font-mono font-bold text-[#b2f2bb] text-sm xs:text-base whitespace-nowrap">${s.amount.toFixed(2)}</span>
                             </div>
                         ))}
                     </div>
