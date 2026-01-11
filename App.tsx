@@ -79,8 +79,7 @@ function App() {
                 <LayoutDashboard className="text-white" size={20} />
               </div>
               <div>
-                <h1 className="text-lg font-black tracking-tighter text-white">FLATMATE</h1>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Project Hub v2</p>
+                <h1 className="text-lg font-black tracking-tighter text-white uppercase">MDQ DASHBOARD</h1>
               </div>
             </div>
             <button 
