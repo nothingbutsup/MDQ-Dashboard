@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Receipt, Dices, Map, BookOpen, Trophy, ChevronRight } from 'lucide-react';
 
 interface DashboardProps {
@@ -9,44 +9,51 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const departureDate = new Date('2026-01-16T06:00:00');
     const returnDate = new Date('2026-01-27T13:20:00');
     
-    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0 });
-    const [tripStatus, setTripStatus] = useState<'BEFORE' | 'DURING' | 'AFTER'>('BEFORE');
-    const [progress, setProgress] = useState(0);
+    const calculateTime = useCallback(() => {
+        const now = new Date();
+        let diff = 0;
+        let status: 'BEFORE' | 'DURING' | 'AFTER' = 'BEFORE';
+        
+        if (now < departureDate) {
+            status = 'BEFORE';
+            diff = departureDate.getTime() - now.getTime();
+        } else if (now < returnDate) {
+            status = 'DURING';
+            diff = returnDate.getTime() - now.getTime();
+        } else {
+            status = 'AFTER';
+            diff = 0;
+        }
+
+        const totalTripTime = returnDate.getTime() - departureDate.getTime();
+        const elapsedSinceDeparture = now.getTime() - departureDate.getTime();
+        const progress = Math.max(0, Math.min(100, (elapsedSinceDeparture / totalTripTime) * 100));
+
+        return {
+            days: diff > 0 ? Math.floor(diff / (1000 * 60 * 60 * 24)) : 0,
+            hours: diff > 0 ? Math.floor((diff / (1000 * 60 * 60)) % 24) : 0,
+            mins: diff > 0 ? Math.floor((diff / 1000 / 60) % 60) : 0,
+            status,
+            progress
+        };
+    }, [departureDate, returnDate]);
+
+    // Initialize state with immediate calculation to avoid 00:00:00 on first render
+    const initialData = calculateTime();
+    const [timeLeft, setTimeLeft] = useState({ days: initialData.days, hours: initialData.hours, mins: initialData.mins });
+    const [tripStatus, setTripStatus] = useState<'BEFORE' | 'DURING' | 'AFTER'>(initialData.status);
+    const [progress, setProgress] = useState(initialData.progress);
 
     useEffect(() => {
         const timer = setInterval(() => {
-            const now = new Date();
-            
-            let diff = 0;
-            if (now < departureDate) {
-                setTripStatus('BEFORE');
-                diff = departureDate.getTime() - now.getTime();
-            } else if (now < returnDate) {
-                setTripStatus('DURING');
-                diff = returnDate.getTime() - now.getTime();
-            } else {
-                setTripStatus('AFTER');
-                diff = 0;
-            }
-            
-            if (diff > 0) {
-                setTimeLeft({
-                    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-                    hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-                    mins: Math.floor((diff / 1000 / 60) % 60)
-                });
-            } else {
-                setTimeLeft({ days: 0, hours: 0, mins: 0 });
-            }
-
-            const totalTripTime = returnDate.getTime() - departureDate.getTime();
-            const elapsedSinceDeparture = now.getTime() - departureDate.getTime();
-            const currentProgress = Math.max(0, Math.min(100, (elapsedSinceDeparture / totalTripTime) * 100));
-            setProgress(currentProgress);
+            const data = calculateTime();
+            setTimeLeft({ days: data.days, hours: data.hours, mins: data.mins });
+            setTripStatus(data.status);
+            setProgress(data.progress);
         }, 1000);
 
         return () => clearInterval(timer);
-    }, []);
+    }, [calculateTime]);
 
     const QuickLink = ({ icon: Icon, title, desc, tab, colorHex }: any) => (
         <button 
