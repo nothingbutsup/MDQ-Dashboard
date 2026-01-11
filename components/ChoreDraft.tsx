@@ -176,8 +176,8 @@ export const ChoreDraft: React.FC<ChoreDraftProps> = ({ isSidebarOpen }) => {
 
             {/* Material Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-6 bg-black/70 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-[#2b2930] w-full max-w-sm p-6 sm:p-8 rounded-[32px] sm:rounded-[40px] shadow-2xl animate-scale-up relative">
+                <div className="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-6 bg-[#1c1b1f]/80 animate-fade-in">
+                    <div className="bg-[#2b2930] w-full max-w-sm p-6 sm:p-8 rounded-[32px] sm:rounded-[40px] shadow-2xl animate-scale-up relative border border-[#49454f]">
                         {isThinking ? (
                             <div className="py-8 sm:py-12 text-center">
                                 <Loader2 size={48} className="mx-auto text-[#d0bcfe] animate-spin mb-6 sm:size-14" />
