@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, SplitMode, Settlement } from '../types';
 import { USERS } from '../constants';
-import { Check, DollarSign, AlertCircle, ArrowRight, Receipt, TrendingUp, TrendingDown } from 'lucide-react';
+import { Check, Receipt } from 'lucide-react';
 
 export const ExpenseSplitter: React.FC = () => {
     const [mode, setMode] = useState<SplitMode>('EQUAL');
@@ -36,7 +36,7 @@ export const ExpenseSplitter: React.FC = () => {
         }
     };
 
-    const { settlements, totalSpent, totalConsumed, isValid, allocationStatus } = useMemo(() => {
+    const { settlements, totalConsumed, isValid, allocationStatus } = useMemo(() => {
         const totalPaid = (Object.values(amounts) as number[]).reduce((a, b) => a + b, 0);
         let calculatedConsumption: Record<string, number> = {};
         let valid = true;
@@ -107,7 +107,6 @@ export const ExpenseSplitter: React.FC = () => {
             if (Math.abs(creditor.balance) < 0.01) j++;
         }
 
-        // Calculation of allocation status for Dutch mode
         let allocStatus = { diff: 0, percent: 100, message: 'Balanced', type: 'success' };
         if (mode === 'UNEQUAL') {
             const diff = totalPaid - consumedSum;
@@ -116,17 +115,14 @@ export const ExpenseSplitter: React.FC = () => {
             if (Math.abs(diff) < 0.1) {
                 allocStatus = { diff: 0, percent: 100, message: 'Balanced', type: 'success' };
             } else if (diff > 0) {
-                // Paid is more than consumed, missing allocation
                 allocStatus = { diff, percent: Math.min(percent, 100), message: `$${diff.toFixed(2)} missing`, type: 'error' };
             } else {
-                // Consumed is more than paid, over allocation
                 allocStatus = { diff, percent: 100, message: `$${Math.abs(diff).toFixed(2)} over`, type: 'warning' };
             }
         }
 
         return {
             settlements: results,
-            totalSpent: totalPaid,
             totalConsumed: consumedSum,
             isValid: valid,
             allocationStatus: allocStatus
@@ -135,7 +131,7 @@ export const ExpenseSplitter: React.FC = () => {
     }, [amounts, shares, splitting, mode]);
 
     return (
-        <div className="space-y-6 animate-fade-in max-w-lg mx-auto">
+        <div className="space-y-6 animate-fade-in max-w-lg mx-auto pb-12">
             {/* Input Card */}
             <div className="bg-[#2b2930] rounded-[32px] overflow-hidden shadow-md">
                 <div className="px-6 py-4 border-b border-[#49454f] flex justify-between items-center bg-[#332f37]">
@@ -145,7 +141,7 @@ export const ExpenseSplitter: React.FC = () => {
                     </h2>
                     
                     <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-[#cac4d0] uppercase tracking-wider">
+                        <span className="text-[10px] xs:text-xs font-bold text-[#cac4d0] uppercase tracking-wider">
                             {mode === 'EQUAL' ? 'Split Equal' : 'Dutch'}
                         </span>
                         <button 
@@ -175,9 +171,9 @@ export const ExpenseSplitter: React.FC = () => {
                         <div className="flex justify-between items-center px-2 mb-2">
                             <span className="text-xs font-bold text-[#e6e1e5] uppercase tracking-widest opacity-90">Participants</span>
                             <div className="flex gap-4">
-                                <span className="text-[11px] text-white uppercase font-black w-24 text-right">Paid</span>
+                                <span className="text-[9px] xs:text-[11px] text-white uppercase font-black w-20 xs:w-24 text-right">Paid</span>
                                 {mode === 'UNEQUAL' && (
-                                    <span className="text-[11px] text-white uppercase font-black w-24 text-right">Consumed</span>
+                                    <span className="text-[9px] xs:text-[11px] text-white uppercase font-black w-20 xs:w-24 text-right">Consumed</span>
                                 )}
                             </div>
                         </div>
@@ -188,40 +184,40 @@ export const ExpenseSplitter: React.FC = () => {
                             const consumedVal = shares[user.id] > 0 ? shares[user.id] : '';
 
                             return (
-                                <div key={user.id} className="flex items-center gap-3 group">
+                                <div key={user.id} className="flex items-center gap-2 xs:gap-3 group">
                                     <div 
                                         onClick={() => handleSplitToggle(user.id)}
-                                        className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors cursor-pointer shrink-0 ${isIncluded ? 'bg-[#d0bcfe] border-[#d0bcfe] text-[#381e72]' : 'border-[#49454f] text-transparent'}`}
+                                        className={`w-5 xs:w-6 h-5 xs:h-6 rounded-md border-2 flex items-center justify-center transition-colors cursor-pointer shrink-0 ${isIncluded ? 'bg-[#d0bcfe] border-[#d0bcfe] text-[#381e72]' : 'border-[#49454f] text-transparent'}`}
                                     >
-                                        <Check className="w-4 h-4" strokeWidth={3} />
+                                        <Check className="w-3.5 xs:w-4 h-3.5 xs:h-4" strokeWidth={3} />
                                     </div>
 
                                     <div className="flex-grow flex items-center gap-2 min-w-0">
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border shrink-0 ${user.colorBg} ${user.colorText} ${user.colorBorder}`}>
-                                            <span className="text-[11px] font-black">{user.name.substring(0, 1)}</span>
+                                        <div className={`w-7 xs:w-8 h-7 xs:h-8 rounded-full flex items-center justify-center border shrink-0 ${user.colorBg} ${user.colorText} ${user.colorBorder}`}>
+                                            <span className="text-[10px] xs:text-[11px] font-black">{user.name.substring(0, 1)}</span>
                                         </div>
-                                        <span className={`text-sm font-bold transition-colors truncate ${isIncluded ? 'text-[#e6e1e5]' : 'text-[#49454f]'}`}>{user.name}</span>
+                                        <span className={`text-xs xs:text-sm font-bold transition-colors truncate ${isIncluded ? 'text-[#e6e1e5]' : 'text-[#49454f]'}`}>{user.name}</span>
                                     </div>
 
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <div className="w-24 relative">
-                                            <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[#49454f] text-[10px] font-bold">$</span>
+                                    <div className="flex items-center gap-1.5 xs:gap-2 shrink-0">
+                                        <div className="w-20 xs:w-24 relative">
+                                            <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[#49454f] text-[9px] xs:text-[10px] font-bold">$</span>
                                             <input 
                                                 type="number" min="0" placeholder="0"
                                                 disabled={!isIncluded}
                                                 value={paidVal}
                                                 onChange={(e) => handleAmountChange(user.id, e.target.value)}
-                                                className="w-full bg-[#1c1b1f] border border-[#49454f] focus:border-[#d0bcfe] rounded-lg py-2 pl-4 pr-1 text-right text-sm font-mono text-white focus:outline-none placeholder-[#49454f] disabled:opacity-30"
+                                                className="w-full bg-[#1c1b1f] border border-[#49454f] focus:border-[#d0bcfe] rounded-lg py-1.5 xs:py-2 pl-3 xs:pl-4 pr-1 text-right text-xs xs:text-sm font-mono text-white focus:outline-none placeholder-[#49454f] disabled:opacity-30"
                                             />
                                         </div>
                                         {mode === 'UNEQUAL' && (
-                                            <div className="w-24 relative">
+                                            <div className="w-20 xs:w-24 relative">
                                                 <input 
                                                     type="number" min="0" placeholder="0"
                                                     disabled={!isIncluded}
                                                     value={consumedVal}
                                                     onChange={(e) => handleShareChange(user.id, e.target.value)}
-                                                    className="w-full bg-[#1c1b1f] border border-[#49454f] focus:border-[#d0bcfe] rounded-lg py-2 px-1 text-right text-sm font-mono text-[#d0bcfe] focus:outline-none placeholder-[#49454f] disabled:opacity-30"
+                                                    className="w-full bg-[#1c1b1f] border border-[#49454f] focus:border-[#d0bcfe] rounded-lg py-1.5 xs:py-2 px-1 text-right text-xs xs:text-sm font-mono text-[#d0bcfe] focus:outline-none placeholder-[#49454f] disabled:opacity-30"
                                                 />
                                             </div>
                                         )}
@@ -231,7 +227,6 @@ export const ExpenseSplitter: React.FC = () => {
                         })}
                     </div>
 
-                    {/* Progress Bar and Status (Dutch only) */}
                     {mode === 'UNEQUAL' && (
                         <div className="pt-2 space-y-3">
                             <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-widest px-1">
@@ -249,11 +244,10 @@ export const ExpenseSplitter: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Total Summary Row */}
                     <div className="pt-8 border-t border-[#49454f] flex flex-col items-center">
                         <div className="text-center space-y-1">
                             <span className="block text-xs font-black text-[#cac4d0] uppercase tracking-[0.2em]">Total</span>
-                            <span className="text-4xl font-light text-[#d0bcfe] tracking-tighter">${totalConsumed.toFixed(2)}</span>
+                            <span className="text-3xl xs:text-4xl font-light text-[#d0bcfe] tracking-tighter">${totalConsumed.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
@@ -261,29 +255,31 @@ export const ExpenseSplitter: React.FC = () => {
 
             {/* Results Card */}
             {settlements.length > 0 && isValid && (
-                <div className="bg-[#4f378b] rounded-[32px] p-8 shadow-lg animate-scale-up">
-                    <h3 className="text-2xl font-black text-[#eaddff] tracking-tighter mb-6 px-1 truncate">
+                <div className="bg-[#4f378b] rounded-[32px] p-6 xs:p-8 shadow-lg animate-scale-up">
+                    <h3 className="text-xl xs:text-2xl font-black text-[#eaddff] tracking-tighter mb-6 px-1 truncate">
                         {title.trim() ? title : "Settlements"}
                     </h3>
                     <div className="space-y-3">
                         {settlements.map((s, idx) => (
-                            <div key={idx} className="flex items-center justify-between bg-[#2b2930] p-4 rounded-2xl shadow-sm border border-transparent hover:border-[#d0bcfe]/20 transition-all">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex -space-x-2">
-                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 border-[#2b2930] ${s.from.colorBg} ${s.from.colorText} ${s.from.colorBorder}`}>
-                                            <span className="text-[10px] font-black">{s.from.name.substring(0,1)}</span>
+                            <div key={idx} className="flex flex-wrap items-center justify-between gap-3 bg-[#2b2930] p-4 rounded-2xl shadow-sm border border-transparent hover:border-[#d0bcfe]/20 transition-all">
+                                <div className="flex items-center gap-3 xs:gap-4 min-w-0">
+                                    <div className="flex -space-x-2 shrink-0">
+                                        <div className={`w-8 xs:w-9 h-8 xs:h-9 rounded-full flex items-center justify-center border-2 border-[#2b2930] ${s.from.colorBg} ${s.from.colorText} ${s.from.colorBorder}`}>
+                                            <span className="text-[9px] xs:text-[10px] font-black">{s.from.name.substring(0,1)}</span>
                                         </div>
-                                        <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 border-[#2b2930] ${s.to.colorBg} ${s.to.colorText} ${s.to.colorBorder}`}>
-                                            <span className="text-[10px] font-black">{s.to.name.substring(0,1)}</span>
+                                        <div className={`w-8 xs:w-9 h-8 xs:h-9 rounded-full flex items-center justify-center border-2 border-[#2b2930] ${s.to.colorBg} ${s.to.colorText} ${s.to.colorBorder}`}>
+                                            <span className="text-[9px] xs:text-[10px] font-black">{s.to.name.substring(0,1)}</span>
                                         </div>
                                     </div>
-                                    <div className="text-sm">
-                                        <span className="text-[#eaddff] font-bold">{s.from.name}</span>
-                                        <span className="text-[#cac4d0] mx-2 opacity-50">→</span>
-                                        <span className="text-[#eaddff] font-bold">{s.to.name}</span>
+                                    <div className="text-xs xs:text-sm min-w-0">
+                                        <div className="flex flex-wrap items-center gap-x-2">
+                                            <span className="text-[#eaddff] font-bold truncate">{s.from.name}</span>
+                                            <span className="text-[#cac4d0] opacity-50 shrink-0">→</span>
+                                            <span className="text-[#eaddff] font-bold truncate">{s.to.name}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <span className="font-mono font-bold text-[#b2f2bb] text-lg">${s.amount.toFixed(2)}</span>
+                                <span className="font-mono font-bold text-[#b2f2bb] text-base xs:text-lg whitespace-nowrap">${s.amount.toFixed(2)}</span>
                             </div>
                         ))}
                     </div>
