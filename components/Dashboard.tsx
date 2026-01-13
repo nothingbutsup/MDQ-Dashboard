@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Receipt, Dices, Map, BookOpen, Trophy, ChevronRight, ShieldAlert } from 'lucide-react';
+import { USERS } from '../constants';
 import { collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { db } from '../App';
-import { USERS } from '../constants';
 
 interface DashboardProps {
     onNavigate: (tab: 'EXPENSE' | 'DRAFT' | 'MAP' | 'RULES' | 'TRUCO' | 'FALTAS') => void;
@@ -13,8 +12,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const departureDate = new Date('2026-01-16T06:00:00');
     const returnDate = new Date('2026-01-27T13:20:00');
     
-    const [faultScores, setFaultScores] = useState<Record<string, number>>(
-        USERS.reduce((acc, u) => ({ ...acc, [u.id]: 0 }), {})
+    const [userScores, setUserScores] = useState<Record<string, number>>(
+        USERS.reduce((acc, user) => ({ ...acc, [user.id]: 0 }), {})
     );
 
     const calculateTime = useCallback(() => {
@@ -46,7 +45,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         };
     }, [departureDate, returnDate]);
 
-    // Initialize state with immediate calculation
+    // Real-time scores listener
+    useEffect(() => {
+        const q = query(collection(db, "faltas"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const scores: Record<string, number> = USERS.reduce((acc, user) => ({ ...acc, [user.id]: 0 }), {});
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (scores[data.userId] !== undefined) {
+                    scores[data.userId] += (data.category || 0);
+                }
+            });
+            setUserScores(scores);
+        }, (err) => {
+            console.debug("Dashboard score listener error (likely unauth):", err.message);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
     const initialData = calculateTime();
     const [timeLeft, setTimeLeft] = useState({ days: initialData.days, hours: initialData.hours, mins: initialData.mins });
     const [tripStatus, setTripStatus] = useState<'BEFORE' | 'DURING' | 'AFTER'>(initialData.status);
@@ -60,23 +77,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             setProgress(data.progress);
         }, 1000);
 
-        // Fetch fault scores for summary
-        const q = query(collection(db, "faltas"));
-        const unsubscribeFaltas = onSnapshot(q, (snapshot) => {
-            const scores: Record<string, number> = USERS.reduce((acc, u) => ({ ...acc, [u.id]: 0 }), {});
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                if (scores[data.userId] !== undefined) {
-                    scores[data.userId] += data.category || 0;
-                }
-            });
-            setFaultScores(scores);
-        });
-
-        return () => {
-            clearInterval(timer);
-            unsubscribeFaltas();
-        };
+        return () => clearInterval(timer);
     }, [calculateTime]);
 
     const QuickLink = ({ icon: Icon, title, desc, tab, colorHex }: any) => (
@@ -100,7 +101,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     );
 
     return (
-        <div className="animate-fade-in space-y-8 pb-12">
+        <div className="animate-fade-in space-y-6 pb-12">
             {/* Timeline Card */}
             <div className="bg-[#2b2930] p-6 rounded-[28px] shadow-lg relative overflow-hidden">
                 <div className="flex items-center gap-3 mb-6">
@@ -132,31 +133,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
             </div>
 
-            {/* Countdown - Now full width */}
-            <div className="w-full text-center py-10 bg-[#211f26] rounded-[32px] border border-[#49454f]/40 flex flex-col justify-center shadow-lg">
-                <div className="inline-block px-4 py-1.5 bg-[#49454f] rounded-full mb-8 self-center">
+            {/* Countdown */}
+            <div className="text-center py-6 bg-[#211f26] rounded-[32px] border border-[#49454f]/40">
+                <div className="inline-block px-4 py-1.5 bg-[#49454f] rounded-full mb-6">
                     <span className="text-[10px] font-bold text-[#eaddff] uppercase tracking-widest">
                         {tripStatus === 'BEFORE' ? 'Until Departure' : tripStatus === 'DURING' ? 'Until Return' : 'Trip Finished'}
                     </span>
                 </div>
                 
-                <div className="flex justify-center items-center gap-4 sm:gap-12">
+                <div className="flex justify-center items-center gap-4 sm:gap-8">
                     <div className="text-center">
-                        <div className="text-5xl sm:text-7xl font-normal text-[#e6e1e5] tabular-nums tracking-tighter">
+                        <div className="text-4xl sm:text-6xl font-normal text-[#e6e1e5] tabular-nums tracking-tighter">
                             {String(timeLeft.days).padStart(2, '0')}
                         </div>
                         <div className="text-[9px] font-bold text-[#cac4d0] uppercase tracking-widest mt-1">Days</div>
                     </div>
-                    <div className="text-3xl text-[#49454f] font-light mb-6">:</div>
+                    <div className="text-2xl text-[#49454f] font-light mb-4">:</div>
                     <div className="text-center">
-                        <div className="text-5xl sm:text-7xl font-normal text-[#e6e1e5] tabular-nums tracking-tighter">
+                        <div className="text-4xl sm:text-6xl font-normal text-[#e6e1e5] tabular-nums tracking-tighter">
                             {String(timeLeft.hours).padStart(2, '0')}
                         </div>
                         <div className="text-[9px] font-bold text-[#cac4d0] uppercase tracking-widest mt-1">Hours</div>
                     </div>
-                    <div className="text-3xl text-[#49454f] font-light mb-6">:</div>
+                    <div className="text-2xl text-[#49454f] font-light mb-4">:</div>
                     <div className="text-center">
-                        <div className="text-5xl sm:text-7xl font-normal text-[#e6e1e5] tabular-nums tracking-tighter">
+                        <div className="text-4xl sm:text-6xl font-normal text-[#e6e1e5] tabular-nums tracking-tighter">
                             {String(timeLeft.mins).padStart(2, '0')}
                         </div>
                         <div className="text-[9px] font-bold text-[#cac4d0] uppercase tracking-widest mt-1">Mins</div>
@@ -203,41 +204,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 />
                 <QuickLink 
                     icon={ShieldAlert} 
-                    title="Faltas" 
-                    desc="View disciplinary ledger" 
+                    title="Roommate Ledger" 
+                    desc="Faltas and disciplinary status" 
                     tab="FALTAS" 
-                    colorHex="#f2b8b5" 
+                    colorHex="#f43f5e" 
                 />
             </div>
 
-            {/* Faults Overview - Moved to bottom and reformatted */}
+            {/* Disciplinary Summary Section */}
             <div className="space-y-4 pt-4">
                 <div className="flex items-center gap-3 px-2">
-                    <ShieldAlert className="text-[#f2b8b5]" size={18} />
-                    <h2 className="text-[11px] font-bold text-[#f2b8b5] tracking-widest uppercase">
-                        Current Faults Count
+                    <ShieldAlert className="text-rose-400" size={18} />
+                    <h2 className="text-[11px] font-bold text-rose-400 tracking-widest uppercase">
+                        Disciplinary Status
                     </h2>
                 </div>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     {USERS.map(user => (
-                        <div key={user.id} className="bg-[#2b2930] p-4 rounded-[24px] border border-[#49454f]/30 flex flex-col items-center gap-3 shadow-md hover:border-rose-500/20 transition-all">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-black ${user.colorBg} ${user.colorText}`}>
-                                {user.name[0]}
+                        <div key={user.id} className="bg-[#2b2930] p-4 rounded-[24px] border border-[#49454f]/30 flex flex-col items-center gap-2 shadow-sm">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border shrink-0 ${user.colorBg} ${user.colorText} ${user.colorBorder}`}>
+                                <span className="text-xs font-black">{user.name.substring(0, 1)}</span>
                             </div>
                             <div className="text-center">
-                                <span className="block text-[10px] font-bold text-[#cac4d0] uppercase tracking-widest mb-1">{user.name}</span>
-                                <span className="text-3xl font-bold text-white font-mono leading-none">
-                                    {String(faultScores[user.id] || 0).padStart(2, '0')}
-                                </span>
+                                <p className="text-[10px] font-bold text-[#e6e1e5] uppercase tracking-wider mb-1">{user.name}</p>
+                                <p className={`text-xl font-mono font-bold leading-none ${userScores[user.id] > 10 ? 'text-rose-400' : userScores[user.id] > 5 ? 'text-orange-400' : 'text-[#cac4d0]'}`}>
+                                    {String(userScores[user.id]).padStart(2, '0')}
+                                </p>
                             </div>
                         </div>
                     ))}
                 </div>
-            </div>
-            
-            <div className="text-center opacity-30 pt-4">
-                <p className="text-[9px] font-bold uppercase tracking-[0.5em]">MDQ Dashboard v2.5</p>
             </div>
         </div>
     );
